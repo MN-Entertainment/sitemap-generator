@@ -3,7 +3,7 @@ const http = require('http');
 const path = require('path');
 const parseURL = require('url-parse');
 const eachSeries = require('async/eachSeries');
-const cpFile = require('cp-file');
+const { copyFile } = require('copy-file');
 const normalizeUrl = require('normalize-url');
 const mitt = require('mitt');
 const format = require('date-fns/format');
@@ -22,7 +22,6 @@ module.exports = function SitemapGenerator(uri, opts) {
     filepath: path.join(process.cwd(), 'sitemap.xml'),
     userAgent: 'Node/SitemapGenerator',
     respectRobotsTxt: true,
-    ignoreInvalidSSL: true,
     timeout: 30000,
     decodeResponses: true,
     lastMod: false,
@@ -54,9 +53,6 @@ module.exports = function SitemapGenerator(uri, opts) {
 
   // only resolve if sitemap path is truthy (a string preferably)
   const sitemapPath = options.filepath && path.resolve(options.filepath);
-
-  // we don't care about invalid certs
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
   const crawler = createCrawler(parsedUrl, options);
 
@@ -132,7 +128,7 @@ module.exports = function SitemapGenerator(uri, opts) {
             const newPath = extendFilename(sitemapPath, `_part${count}`);
 
             // copy and remove tmp file
-            cpFile(tmpPath, newPath).then(() => {
+            copyFile(tmpPath, newPath).then(() => {
               fs.unlink(tmpPath, () => {
                 done();
               });
@@ -154,7 +150,7 @@ module.exports = function SitemapGenerator(uri, opts) {
           }
         );
       } else if (sitemaps.length) {
-        cpFile(sitemaps[0], sitemapPath).then(() => {
+        copyFile(sitemaps[0], sitemapPath).then(() => {
           fs.unlink(sitemaps[0], cb);
         });
       } else {
